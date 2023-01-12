@@ -36,9 +36,9 @@ def load_and_epoch_OpenBMI_by_ftp(subject, session, epoch_window=[0, 4],
     """
 
     url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
-        'session' + str(session) + '/s' + str(subject) + '/ses'\
+        'session' + str(session) + '/s' + str(subject + 1) + '/ses'\
         's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
-                    subject) + '_EEG_MI.mat'
+                    subject + 1) + '_EEG_MI.mat'
     urllib.request.urlretrieve(url, 'EEG_MI.mat')
     # Load .mat data
     data = loadmat('EEG_MI.mat')
@@ -207,9 +207,9 @@ def raw_from_OpenBMI_data_by_ftp(subject, session, picks=None):
         The MNE Raw object corresponding to the loaded file.
     """
     url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
-        'session' + str(session) + '/s' + str(subject+1) + '/ses'\
+        'session' + str(session) + '/s' + str(subject + 1) + '/ses'\
         's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
-                    subject+1) + '_EEG_MI.mat'
+                    subject + 1) + '_EEG_MI.mat'
     urllib.request.urlretrieve(url, 'EEG_MI.mat')
     # Load .mat data
     data = loadmat('EEG_MI.mat')
