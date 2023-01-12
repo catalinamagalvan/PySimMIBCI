@@ -8,8 +8,86 @@ Created on Tue Apr 21 17:45:25 2020
 import numpy as np
 from scipy.io import loadmat
 import mne
+import urllib.request
 
 mne.set_log_level(verbose='warning')
+
+
+def load_and_epoch_OpenBMI_by_ftp(subject, session, epoch_window=[0, 4],
+                                  picks=None):
+    """
+    Fetch by ftp OpenBMI data and creates corresponding MNE Epochs objects.
+
+    Parameters
+    ----------
+    subject : int
+        Subject number in OpenBMI dataset, ranging from 0 to 53.
+    session : int
+        Session number in OpenBMI dataset, [1, 2].
+    epoch_window : list, optional
+        List indicating the start and end time of the epochs in seconds,
+        relative to the time-locked event. The default is [0, 4].
+    picks : list, optional
+        Channels to include. Lists of integers will be interpreted
+        as channel indices. None (default) will pick all channels.
+
+    Returns
+    -------
+    epochs : instance of Epochs
+        The MNE Epochs corresponding to the loaded file.
+    epochs_right : instance of Epochs
+        The MNE Epochs corresponding to right hand MI in the loaded file.
+    epochs_left : instance of Epochs
+        The MNE Epochs corresponding to right hand MI in the loaded file.
+
+    """
+
+    url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
+        'session' + str(session) + '/s' + str(subject) + '/ses'\
+        's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
+                    subject) + '_EEG_MI.mat'
+    urllib.request.urlretrieve(url, 'EEG_MI.mat')
+    # Load .mat data
+    data = loadmat('EEG_MI.mat')
+    # Create info object
+    fs = data['EEG_MI_train'][0, 0]['fs'].squeeze().item()
+    info = create_OpenBMI_info(picks)
+    # Training data
+    data_train = data['EEG_MI_train'][0, 0]
+    t_train = data_train['t'][0]
+    eeg_train = data_train['x']
+    eeg_train = eeg_train.T
+    epochInterval = np.array(range(int(epoch_window[0]*fs),
+                                   int(epoch_window[1]*fs)))
+    x_train = np.stack([eeg_train[:, epochInterval+event] for event in
+                        t_train], axis=2)
+    # x (n_trials, n_channels, n_times)
+    x_train = np.transpose(x_train, (2, 0, 1))
+    y_train = data_train['y_dec'].squeeze().astype(int)-1
+    # Test data
+    data_test = data['EEG_MI_test'][0, 0]
+    t_test = data_test['t'][0]
+    eeg_test = data_test['x']
+    eeg_test = eeg_test.T
+    x_test = np.stack([eeg_test[:, epochInterval+event] for event in
+                       t_test], axis=2)
+    # x (n_trials, n_channels, n_times)
+    x_test = np.transpose(x_test, (2, 0, 1))
+    y_test = data_test['y_dec'].squeeze().astype(int)-1
+    x = np.concatenate((x_train, x_test), axis=0)
+    if picks is not None:
+        x = x[:, picks]
+    y = np.concatenate((y_train, y_test))
+    y[y == 2] = 0
+    x_right = x[y == 0]
+    x_left = x[y == 1]
+    events_matrix = np.zeros((len(y), 3)).astype(int)
+    events_matrix[:, 0] = list(range(len(y)))
+    events_matrix[:, -1] = y
+    epochs_right = mne.EpochsArray(x_right, info, events=events_matrix[y == 0])
+    epochs_left = mne.EpochsArray(x_left, info, events=events_matrix[y == 1])
+    epochs = mne.EpochsArray(x, info, events=events_matrix)
+    return epochs, epochs_right, epochs_left
 
 
 def create_OpenBMI_info(picks=None):
