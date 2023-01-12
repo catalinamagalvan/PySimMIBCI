@@ -189,6 +189,40 @@ def load_and_epoch_OpenBMI_data(fname, epoch_window=[0, 4], picks=None):
     return epochs, epochs_right, epochs_left
 
 
+def raw_from_OpenBMI_data_by_ftp(subject, session, picks=None):
+    """
+    Fetch by ftp OpenBMI data and create corresponding MNE Raw object.
+    Parameters
+    ----------
+    subject : int
+        Subject number in OpenBMI dataset, ranging from 0 to 53.
+    session : int
+        Session number in OpenBMI dataset, [1, 2].
+    picks : list, optional
+        Channels to include. Lists of integers will be interpreted
+        as channel indices. None (default) will pick all channels.
+    Returns
+    -------
+    raw : instance of mne Raw.
+        The MNE Raw object corresponding to the loaded file.
+    """
+    url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
+        'session' + str(session) + '/s' + str(subject+1) + '/ses'\
+        's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
+                    subject+1) + '_EEG_MI.mat'
+    urllib.request.urlretrieve(url, 'EEG_MI.mat')
+    # Load .mat data
+    data = loadmat('EEG_MI.mat')
+    # Create info object
+    info = create_OpenBMI_info(picks)
+    # Training data
+    data_train = data['EEG_MI_train'][0, 0]
+    eeg_train = data_train['x']
+    eeg_train = eeg_train.T
+    raw = mne.io.RawArray(eeg_train, info)
+    return raw
+  
+
 def raw_from_OpenBMI_data(fname, picks=None):
     """
     Load OpenBMI data and creates corresponding MNE Raw object.
