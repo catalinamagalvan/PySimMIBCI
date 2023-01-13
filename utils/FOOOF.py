@@ -6,7 +6,6 @@ Created on Wed Jun 15 15:56:31 2022
 @author: catalina
 """
 import numpy as np
-import mne
 from fooof import FOOOF
 from fooof.analysis import get_band_peak_fm
 import matplotlib.pyplot as plt
@@ -226,7 +225,8 @@ def fit_FOOOF(freqs, power_spectrum, aperiodic_mode='fixed',
 
 def plot_FOOOF(freqs, power_spectrum, aperiodic_mode='fixed',
                peak_width_limits=(1, 10), savefig=False,
-               filename=None, band=(7, 14), select_highest=True):
+               filename=None, band=(7, 14), select_highest=True,
+               ax=None, add_legend=True):
     """
     Fit and plot FOOOF object.
 
@@ -258,6 +258,10 @@ def plot_FOOOF(freqs, power_spectrum, aperiodic_mode='fixed',
         Whether to return single peak (if True) or all peaks within the range
         found (if False). If True, returns the highest power peak within the
         search range. The default is True.
+    ax: matplotlib.Axes, optional
+        Figure axes upon which to plot.
+    add_legend: boolean, optional, default: True
+        Whether to add a legend describing the plot components.
 
     """
     if aperiodic_mode is not None:
@@ -278,7 +282,63 @@ def plot_FOOOF(freqs, power_spectrum, aperiodic_mode='fixed',
         else:
             fm = fm_fixed
 
-    fm.plot()
+    fm.plot(ax=ax, add_legend=add_legend)
     if savefig:
         plt.savefig(filename, format='png', transparent=True, dpi=2000,
                     bbox_inches='tight', pad_inches=0)
+
+
+def plot_PSD_FOOOF(epochs_right, epochs_left, f_min, f_max, t_min, t_max,
+                   title):
+    """
+    Calculate and plot the power spectrum and the FOOOF model fit results.
+    Parameters
+    ----------
+    epochs_right : instance of MNE Epochs
+        The real MI-EEG epochs corresponding to right hand MI class.
+    epochs_left : instance of MNE Epochs
+        The real MI-EEG epochs corresponding to left hand MI class.
+    f_min : float
+        Min frequency of interest in the computation of the power spectral
+        density (PSD) by multitaper method.
+    f_max : float
+        Max frequency of interest in the computation of the PSD by multitaper
+        method.
+    t_min : float,
+        Min time of interest in the computation of the PSD by multitaper
+        method.
+    t_max : float
+        Min time of interest in the computation of the PSD by multitaper
+        method.
+    title : str
+        Text to use for the title.
+
+    Returns
+    -------
+    None.
+
+    """
+    ch_names = epochs_right.ch_names
+    PSD_right, freqs = epochs_right.compute_psd(method='multitaper',
+                                                fmin=f_min, fmax=f_max,
+                                                tmin=t_min,
+                                                tmax=t_max).get_data(
+                                                          return_freqs=True)
+    PSD_left, freqs = epochs_left.compute_psd(method='multitaper',
+                                              fmin=f_min, fmax=f_max,
+                                              tmin=t_min, tmax=t_max).get_data(
+                                                          return_freqs=True)
+    fig, axs = plt.subplots(nrows=1, ncols=4, sharex=True, figsize=(24, 6))
+    axs[0].set_title('Right hand MI - C3', fontsize=20)
+    plot_FOOOF(freqs, np.mean(PSD_right[:, ch_names.index('C3')], axis=0),
+               ax=axs[0], add_legend=False)
+    axs[1].set_title('Right hand MI - C4', fontsize=20)
+    plot_FOOOF(freqs, np.mean(PSD_right[:, ch_names.index('C4')], axis=0),
+               ax=axs[1], add_legend=False)
+    axs[2].set_title('Left hand MI - C3', fontsize=20)
+    plot_FOOOF(freqs, np.mean(PSD_left[:, ch_names.index('C3')], axis=0),
+               ax=axs[2], add_legend=False)
+    axs[3].set_title('Right hand MI - C4', fontsize=20)
+    plot_FOOOF(freqs, np.mean(PSD_left[:, ch_names.index('C4')], axis=0),
+               ax=axs[3])
+    fig.suptitle('PSD and FOOOF fitting - ' + title, fontsize=24)
