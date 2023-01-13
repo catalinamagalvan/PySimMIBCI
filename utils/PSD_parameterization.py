@@ -288,8 +288,8 @@ def plot_FOOOF(freqs, power_spectrum, aperiodic_mode='fixed',
                     bbox_inches='tight', pad_inches=0)
 
 
-def plot_PSD_FOOOF(epochs_right, epochs_left, f_min, f_max, t_min, t_max,
-                   title):
+def plot_PSD_FOOOF(epochs_right, epochs_left, f_min=1, f_max=40, t_min=0,
+                   t_max=3, title=None):
     """
     Calculate and plot the power spectrum and the FOOOF model fit results.
     Parameters
@@ -298,19 +298,19 @@ def plot_PSD_FOOOF(epochs_right, epochs_left, f_min, f_max, t_min, t_max,
         The real MI-EEG epochs corresponding to right hand MI class.
     epochs_left : instance of MNE Epochs
         The real MI-EEG epochs corresponding to left hand MI class.
-    f_min : float
+    f_min : float, optional
         Min frequency of interest in the computation of the power spectral
-        density (PSD) by multitaper method.
-    f_max : float
+        density (PSD) by multitaper method. The default is 1.
+    f_max : float, optional
         Max frequency of interest in the computation of the PSD by multitaper
-        method.
-    t_min : float,
+        method. The default is 40.
+    t_min : float, optional
         Min time of interest in the computation of the PSD by multitaper
-        method.
-    t_max : float
+        method. The default is 0.
+    t_max : float, optional
         Min time of interest in the computation of the PSD by multitaper
-        method.
-    title : str
+        method. The default is 3.
+    title : str, optional
         Text to use for the title.
 
     Returns
@@ -328,17 +328,32 @@ def plot_PSD_FOOOF(epochs_right, epochs_left, f_min, f_max, t_min, t_max,
                                               fmin=f_min, fmax=f_max,
                                               tmin=t_min, tmax=t_max).get_data(
                                                           return_freqs=True)
-    fig, axs = plt.subplots(nrows=1, ncols=4, sharex=True, figsize=(24, 6))
-    axs[0].set_title('Right hand MI - C3', fontsize=20)
+    fig, axs = plt.subplots(nrows=1, ncols=4, sharex=True, figsize=(20, 4.5))
+    fig.subplots_adjust(top=0.82)
+    axs[0].set_title('Right hand MI - C3', fontsize=18)
     plot_FOOOF(freqs, np.mean(PSD_right[:, ch_names.index('C3')], axis=0),
                ax=axs[0], add_legend=False)
-    axs[1].set_title('Right hand MI - C4', fontsize=20)
+    axs[0].grid(False)
+
+    axs[1].set_title('Right hand MI - C4', fontsize=18)
     plot_FOOOF(freqs, np.mean(PSD_right[:, ch_names.index('C4')], axis=0),
                ax=axs[1], add_legend=False)
-    axs[2].set_title('Left hand MI - C3', fontsize=20)
+    axs[1].set_yticklabels([])
+    axs[1].set_ylabel(None)
+    axs[1].grid(False)
+
+    axs[2].set_title('Left hand MI - C3', fontsize=18)
     plot_FOOOF(freqs, np.mean(PSD_left[:, ch_names.index('C3')], axis=0),
                ax=axs[2], add_legend=False)
-    axs[3].set_title('Right hand MI - C4', fontsize=20)
+    axs[2].set_yticklabels([])
+    axs[2].set_ylabel(None)
+    axs[2].grid(False)
+
+    axs[3].set_title('Right hand MI - C4', fontsize=18)
     plot_FOOOF(freqs, np.mean(PSD_left[:, ch_names.index('C4')], axis=0),
                ax=axs[3])
-    fig.suptitle('PSD and FOOOF fitting - ' + title, fontsize=24)
+    axs[3].set_yticklabels([])
+    axs[3].set_ylabel(None)
+    axs[3].grid(False)
+    if title:
+        fig.suptitle('PSD and FOOOF fitting - ' + title, fontsize=22, y=0.98)
