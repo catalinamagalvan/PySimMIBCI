@@ -192,7 +192,8 @@ def theta_activity(N_samples, sfreq, increase=1):
     if increase != 1:
         mask = np.linspace(0, increase, len(source_activity))
         source_activity *= mask
-    return 1e-8*source_activity
+    # return 1e-8*source_activity
+    return 1e-9*source_activity
 
 
 def alpha_activity(N_samples, sfreq, increase=1):
@@ -210,8 +211,8 @@ def alpha_activity(N_samples, sfreq, increase=1):
     if increase != 1:
         mask = np.linspace(0, increase, len(source_activity))
         source_activity *= mask
-    return 1e-8*source_activity
-
+    #return 1e-8*source_activity
+    return 1e-9*source_activity
 
 def add_basal_theta_alpha(source_simulator, fatigue_start, subject,
                           subjects_dir):
