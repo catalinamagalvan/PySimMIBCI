@@ -178,41 +178,36 @@ def generate_where(subject, subjects_dir):
 
 
 def theta_activity(N_samples, sfreq, increase=1):
-    f_theta_min = 4
-    f_theta_max = 8
     # All sources are independent gaussian
     rng = np.random.default_rng()
-    non_filtered_activity = rng.normal(loc=7, size=N_samples)
+    #non_filtered_activity = rng.normal(loc=7, size=N_samples)
+    non_filtered_activity = rng.normal(loc=3.5, size=N_samples)
     # Filter to a narrow band
-    filter_order = 2
-    sos = signal.butter(filter_order, (f_theta_min, f_theta_max),
+    sos = signal.butter(2, (4, 8),
                         'bandpass', fs=sfreq, output='sos')
     source_activity = signal.sosfilt(sos, non_filtered_activity)
     # Increase theta activity in the fatigue condition
     if increase != 1:
         mask = np.linspace(0, increase, len(source_activity))
         source_activity *= mask
-    # return 1e-8*source_activity
-    return 1e-9*source_activity
+    return 1e-8*source_activity
 
 
 def alpha_activity(N_samples, sfreq, increase=1):
-    f_alpha_min = 8
-    f_alpha_max = 13
     # All sources are independent gaussian
     rng = np.random.default_rng()
-    non_filtered_activity = rng.normal(loc=7.8, size=N_samples)
+    # non_filtered_activity = rng.normal(loc=7.8, size=N_samples)
+    non_filtered_activity = rng.normal(loc=4, size=N_samples)
     # Filter to a narrow band
-    filter_order = 2
-    sos = signal.butter(filter_order, (f_alpha_min, f_alpha_max),
+    sos = signal.butter(2, (8, 13),
                         'bandpass', fs=sfreq, output='sos')
     source_activity = signal.sosfilt(sos, non_filtered_activity)
     # Increase theta activity in the fatigue condition
     if increase != 1:
         mask = np.linspace(0, increase, len(source_activity))
         source_activity *= mask
-    #return 1e-8*source_activity
-    return 1e-9*source_activity
+    return 1e-8*source_activity
+
 
 def add_basal_theta_alpha(source_simulator, fatigue_start, subject,
                           subjects_dir):
