@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 21 17:45:25 2020
+
+@author: cati9
+"""
+
 import numpy as np
 from scipy.io import loadmat
 import mne
@@ -9,7 +16,7 @@ mne.set_log_level(verbose='warning')
 def load_and_epoch_OpenBMI_by_ftp(subject, session, epoch_window=[0, 4],
                                   picks=None):
     """
-    Fetch by ftp OpenBMI data and creates corresponding MNE Epochs objects.
+    Fetch by ftp OpenBMI data and create corresponding MNE Epochs objects.
 
     Parameters
     ----------
@@ -36,9 +43,9 @@ def load_and_epoch_OpenBMI_by_ftp(subject, session, epoch_window=[0, 4],
     """
 
     url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
-        'session' + str(session) + '/s' + str(subject + 1) + '/ses'\
+        'session' + str(session) + '/s' + str(subject+1) + '/ses'\
         's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
-                    subject + 1) + '_EEG_MI.mat'
+                    subject+1) + '_EEG_MI.mat'
     urllib.request.urlretrieve(url, 'EEG_MI.mat')
     # Load .mat data
     data = loadmat('EEG_MI.mat')
@@ -83,9 +90,10 @@ def load_and_epoch_OpenBMI_by_ftp(subject, session, epoch_window=[0, 4],
     return epochs, epochs_right, epochs_left
 
 
-def create_OpenBMI_info(picks=None):
+def create_BCIIV1_info(picks=None):
     """
-    Create suitable MNE Info object for OpenBMI data.
+    Create a basic MNE Info instance suitable for BCI competition IV dataset 1
+    data.
 
     Parameters
     ----------
@@ -100,7 +108,42 @@ def create_OpenBMI_info(picks=None):
 
     """
     # Create info object and select channels if requested
-    fs = 1000
+    sfreq = 1000
+    ch_names = ['AF3', 'AF4', 'F5', 'F3', 'F1', 'Fz', 'F2', 'F4', 'F6', 'FC5',
+                'FC3', 'FC1', 'FCz', 'FC2', 'FC4', 'FC6', 'T7', 'C5', 'C3',
+                'C1', 'Cz', 'C2', 'C4', 'C6', 'T8', 'CP5', 'CP3', 'CP1', 'CPz',
+                'CP2', 'CP4', 'CP6', 'P5', 'P3', 'P1', 'Pz', 'P2', 'P4', 'P6',
+                'O1', 'O2']
+    if picks is not None:
+        ch_names_sel = [channel for c, channel in enumerate(ch_names) if c in
+                        picks]
+    else:
+        ch_names_sel = ch_names
+    montage = mne.channels.make_standard_montage('standard_1005')
+    info = mne.create_info(ch_names_sel, sfreq=sfreq, ch_types='eeg',
+                           verbose=None)
+    info.set_montage(montage)
+    return info
+
+
+def create_OpenBMI_info(picks=None):
+    """
+    Create a basic MNE Info instance suitable for OpenBMI dataset data.
+
+    Parameters
+    ----------
+    picks : list, optional
+        Channels to include. Lists of integers will be interpreted
+        as channel indices. None (default) will pick all channels.
+
+    Returns
+    -------
+    info : instance of MNE Info
+        Corresponding MNE Info object.
+
+    """
+    # Create info object and select channels if requested
+    sfreq = 1000
     ch_names = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'FC5', 'FC1',
                 'FC2', 'FC6', 'T7', 'C3', 'Cz', 'C4', 'T8', 'TP9', 'CP5',
                 'CP1', 'CP2', 'CP6', 'TP10', 'P7', 'P3', 'Pz', 'P4', 'P8',
@@ -115,7 +158,7 @@ def create_OpenBMI_info(picks=None):
     else:
         ch_names_sel = ch_names
     montage = mne.channels.make_standard_montage('standard_1005')
-    info = mne.create_info(ch_names_sel, sfreq=fs, ch_types='eeg',
+    info = mne.create_info(ch_names_sel, sfreq=sfreq, ch_types='eeg',
                            verbose=None)
     info.set_montage(montage)
     return info
@@ -192,6 +235,7 @@ def load_and_epoch_OpenBMI_data(fname, epoch_window=[0, 4], picks=None):
 def raw_from_OpenBMI_data_by_ftp(subject, session, picks=None):
     """
     Fetch by ftp OpenBMI data and create corresponding MNE Raw object.
+
     Parameters
     ----------
     subject : int
@@ -201,15 +245,17 @@ def raw_from_OpenBMI_data_by_ftp(subject, session, picks=None):
     picks : list, optional
         Channels to include. Lists of integers will be interpreted
         as channel indices. None (default) will pick all channels.
+
     Returns
     -------
     raw : instance of mne Raw.
         The MNE Raw object corresponding to the loaded file.
+
     """
     url = 'ftp://parrot.genomics.cn/gigadb/pub/10.5524/100001_101000/100542/'\
-        'session' + str(session) + '/s' + str(subject + 1) + '/ses'\
+        'session' + str(session) + '/s' + str(subject+1) + '/ses'\
         's' + '{0:0=2d}'.format(session) + '_subj' + '{0:0=2d}'.format(
-                    subject + 1) + '_EEG_MI.mat'
+                    subject+1) + '_EEG_MI.mat'
     urllib.request.urlretrieve(url, 'EEG_MI.mat')
     # Load .mat data
     data = loadmat('EEG_MI.mat')
@@ -221,7 +267,7 @@ def raw_from_OpenBMI_data_by_ftp(subject, session, picks=None):
     eeg_train = eeg_train.T
     raw = mne.io.RawArray(eeg_train, info)
     return raw
-  
+
 
 def raw_from_OpenBMI_data(fname, picks=None):
     """
