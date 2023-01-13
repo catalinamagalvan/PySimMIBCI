@@ -8,8 +8,27 @@ Created on Mon Feb 1 19:31:54 2021
 import numpy as np
 from numpy.matlib import repmat
 from scipy import signal
-from mne import read_labels_from_annot
+from mne import read_labels_from_annot, make_forward_solution
 from mne.label import select_sources
+from mne.datasets import fetch_fsaverage
+from mne.simulation import SourceSimulator
+import os
+
+
+def set_up_source_forward(subject, info):
+    # Setup source space and compute forward solution
+    # Download head model (fsaverage) files
+    fs_dir = fetch_fsaverage(verbose=False)
+    src = os.path.join(fs_dir, 'bem', 'fsaverage-ico-5-src.fif')
+    bem = os.path.join(fs_dir, 'bem', 'fsaverage-5120-5120-5120-bem-sol.fif')
+    fwd = make_forward_solution(info, trans=subject, src=src,
+                                bem=bem, eeg=True, mindist=5.0)
+    # Here, :class:`~mne.simulation.SourceSimulator` is used, which allows to
+    # specify where (label), what (source_time_series), and when (events) an
+    # event type will occur.
+    src = fwd['src']
+    source_simulator = SourceSimulator(src, tstep=1/info['sfreq'])
+    return fwd, source_simulator
 
 
 def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
@@ -28,13 +47,91 @@ def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
     return simulation_peak_params
 
 
+def generate_what_failed(MI_tasks, events, user_params, MI_duration, sfreq,
+                         N_trials, reduction, p_failed):
+    peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
+                                      reduction=reduction)
+    aperiodic_params = user_params['aperiodic_params']
+    # Generate bad trials vector
+    bad_trials_vector = np.zeros(np.size(events, 0))
+    rng = np.random.default_rng()
+    # Select only MI positions (not rest)
+    MI_positions = np.logical_or(events[:, 2] == 1, events[:, 2] == 2).nonzero(
+        )[0]
+    MI_positions_failed = rng.choice(MI_positions, int(p_failed*N_trials/2))
+    bad_trials_vector[MI_positions_failed] = 1
+
+    # Load the 4 necessary label names.
+    labels_names = list(peak_params.keys())
+    N_samples_trial = int(np.round(MI_duration/1000*sfreq))
+    N_samples = int(events[-1, 0]) + N_samples_trial
+    N_samples_class = int(N_samples//len(MI_tasks))
+    N_trials_class = N_trials//len(MI_tasks)
+
+    MI_activity = dict()
+    # Create raw
+    for label in labels_names:
+        MI_activity[label] = dict()
+        for task in MI_tasks:
+            # Right activity
+            peak = peak_params[label][task]
+            MI_activity[label][task] = np.zeros(N_samples_class)
+            non_filtered_activity = np.random.randn(1, N_samples_class)
+            # aperiodic component in linear space
+            offset = aperiodic_params[0]/2
+            exponent = aperiodic_params[1]
+            cf = peak[0]
+            aperiodic_f = 10**offset/(cf**exponent)
+            pw = aperiodic_f*10**(peak[1])
+            bw = peak[2]
+            # Filter
+            sos = signal.butter(2, (cf-bw/2, cf+bw/2),
+                                'bandpass', fs=sfreq, output='sos')
+            aux = signal.sosfilt(sos, non_filtered_activity[0])
+            MI_activity[label][task] += 1e-4*pw*aux
+            # No modulation activity
+            if peak[1] == 0.4*(1-reduction):
+                MI_activity[label][task+'_wrong'] = np.zeros(
+                    N_samples_class)
+                non_filtered_activity = np.random.randn(1,
+                                                        N_samples_class)
+                # aperiodic component in linear space
+                aperiodic_f = 10**offset/(cf**exponent)
+                pw = aperiodic_f*10**(peak[1]/(1-reduction))
+                bw = peak[2]
+                # Filter
+                sos = signal.butter(2, (cf-bw/2, cf+bw/2),
+                                    'bandpass', fs=sfreq, output='sos')
+                aux = signal.sosfilt(sos, non_filtered_activity[0])
+                MI_activity[label][task+'_wrong'] += 1e-4*pw*aux
+
+    MI_activity_epoched = dict()
+    for label in labels_names:
+        MI_activity_epoched[label] = dict()
+        for task_ID, task in enumerate(MI_tasks, 1):
+            peak = peak_params[label][task]
+            bad_trials_vector_tmp = bad_trials_vector[np.where(events[:, 2] ==
+                                                               task_ID)[0]]
+            MI_activity_epoched[label][task] = np.empty((N_trials_class,
+                                                         N_samples_trial))
+            for t, _ in enumerate(bad_trials_vector_tmp):
+                if bad_trials_vector_tmp[t] == 1 and peak[1] == 0.4*(
+                        1-reduction):
+                    MI_activity_epoched[label][task][t] = MI_activity[label][
+                        task+'_wrong'][t*N_samples_trial:(t+1)*N_samples_trial]
+                else:
+                    MI_activity_epoched[label][task][t] = MI_activity[label][
+                        task][t*N_samples_trial:(t+1)*N_samples_trial]
+    return MI_activity_epoched
+
+
 def generate_what(MI_tasks, events, user_params, MI_duration, sfreq, N_trials,
                   reduction):
 
     peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
                                       reduction=reduction)
     aperiodic_params = user_params['aperiodic_params']
-    labels_names = ['G_precentral-lh', 'G_precentral-rh']
+    labels_names = peak_params.keys()
     N_samples_trial = int(np.round(MI_duration/1000*sfreq))
     N_samples = int(events[-1, 0]) + N_samples_trial
     N_samples_class = int(N_samples//len(MI_tasks))
@@ -146,15 +243,14 @@ def generate_when(events_info, N_trials, sfreq, include_rest=False,
     return events
 
 
-def generate_where(subject, subjects_dir):
+def generate_where(subject):
     """
-    Generate 
+    Generate
 
     Parameters
     ----------
     subject : TYPE
         DESCRIPTION.
-    subjects_dir : TYPE
         DESCRIPTION.
 
     Returns
@@ -168,11 +264,10 @@ def generate_where(subject, subjects_dir):
     where = dict()
     for label in labels_names:
         label_tmp = read_labels_from_annot(subject, annot,
-                                           subjects_dir=subjects_dir,
                                            regexp=label, verbose=False)
         label_tmp = label_tmp[0]
         label_tmp = select_sources(subject, label_tmp, location='center',
-                                   extent=30, subjects_dir=subjects_dir)
+                                   extent=30)
         where[label] = label_tmp
     return where
 
