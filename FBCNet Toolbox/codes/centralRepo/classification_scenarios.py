@@ -500,25 +500,8 @@ def cross_session_aug(dataset, augmentation, nTrialsAugList=[1], network=None,
         modeInFol = 'multiviewPython'  # FBCNet uses multi-view data
     else:
         modeInFol = 'rawPython'
+    config['modelArguments'] = set_config_model_arguments(dataset)
 
-    if dataset == 'korea':
-        config['modelArguments'] = {'nChan': 20, 'nTime': 500,
-                                    'dropoutP': 0.5,
-                                    'nBands': 9, 'm': 32,
-                                    'temporalLayer': 'LogVarLayer',
-                                    'nClass': 2, 'doWeightNorm': True}
-    elif dataset == 'bci41':
-        config['modelArguments'] = {'nChan': 41, 'nTime': 500,
-                                    'dropoutP': 0.5,
-                                    'nBands': 9, 'm': 32,
-                                    'temporalLayer': 'LogVarLayer',
-                                    'nClass': 2, 'doWeightNorm': True}
-    elif dataset == 'simdataset':
-        config['modelArguments'] = {'nChan': 41, 'nTime': 500,
-                                    'dropoutP': 0.5,
-                                    'nBands': 9, 'm': 32,
-                                    'temporalLayer': 'LogVarLayer',
-                                    'nClass': 2, 'doWeightNorm': True}
     for seed in random_seed_list:
         config['randSeed'] = seed
         # Output folder:
@@ -631,6 +614,7 @@ def cross_session_aug(dataset, augmentation, nTrialsAugList=[1], network=None,
                                                 test_size=config[
                                                     'validationSet'],
                                                 random_state=0)
+            print(idxVal)
             # isolate the train and validation set
             valData = copy.deepcopy(trainData)
             valData.createPartialDataset(idxVal)
