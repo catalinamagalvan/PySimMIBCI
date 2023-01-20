@@ -569,7 +569,7 @@ def fetchAndParseKoreaFile(dataPath, url=None, epochWindow=[0.5, 2.5],
     if not os.path.exists(dataPath):
         if not os.path.exists(os.path.dirname(dataPath)):
             os.makedirs(os.path.dirname(dataPath))
-        print('fetching data over ftp: ' + dataPath)
+        print('Fetching data over ftp.')
         with closing(request.urlopen(url)) as r:
             with open(dataPath, 'wb') as f:
                 shutil.copyfileobj(r, f)
