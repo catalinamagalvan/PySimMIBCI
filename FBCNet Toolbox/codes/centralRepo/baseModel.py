@@ -541,6 +541,7 @@ class baseModel():
                                                  data[1]['label'],
                                                  data[2]['label'],
                                                  data[3]['label']), dim=0)
+                print(data[0]['data'])
                 # forward pass:
                 output = self.net(data_train['data'].unsqueeze(1).to(
                     self.device))
