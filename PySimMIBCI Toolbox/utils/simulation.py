@@ -304,8 +304,7 @@ def alpha_activity(N_samples, sfreq, increase=1):
     return 1e-8*source_activity
 
 
-def add_basal_theta_alpha(source_simulator, fatigue_start, subject,
-                          subjects_dir):
+def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
     """
     Function to add fatigue effects to source_simulator object.
 
@@ -333,49 +332,45 @@ def add_basal_theta_alpha(source_simulator, fatigue_start, subject,
     # Add alpha activity
     what = alpha_activity(N_samples_alert,
                           sfreq=int(1/source_simulator._tstep))
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='rh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
                                        regexp='G_and_S_paracentral',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=5, subjects_dir=subjects_dir)
+                               extent=5)
     source_simulator.add_data(label_tmp, what, event)
 
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='lh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='lh',
                                        regexp='G_and_S_paracentral',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=5, subjects_dir=subjects_dir)
+                               extent=5)
     source_simulator.add_data(label_tmp, what, event)
 
     # Add theta activity
     what = theta_activity(N_samples_alert,
                           sfreq=int(1/source_simulator._tstep))
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='rh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
                                        regexp='G_front_sup',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='lh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='lh',
                                        regexp='G_front_sup',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
     return source_simulator
 
 
-def add_fatigue_effect(source_simulator, fatigue_start, subject, subjects_dir,
+def add_fatigue_effect(source_simulator, fatigue_start, subject,
                        annot='aparc.a2009s'):
     """
     Function to add fatigue effects to source_simulator object.
@@ -404,22 +399,20 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject, subjects_dir,
     what = alpha_activity(N_samples_fatigue,
                           sfreq=int(1/source_simulator._tstep),
                           increase=30*1.5)
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='rh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
                                        regexp='G_and_S_paracentral',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
-    label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir, hemi='lh',
+    label_tmp = read_labels_from_annot(subject, annot, hemi='lh',
                                        regexp='G_and_S_paracentral',
                                        verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
     # Add theta activity
@@ -427,21 +420,19 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject, subjects_dir,
                           sfreq=int(1/source_simulator._tstep),
                           increase=40*1.3)
     label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir,
                                        regexp='G_front_sup',
                                        hemi='lh', verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
     label_tmp = read_labels_from_annot(subject, annot,
-                                       subjects_dir=subjects_dir,
                                        regexp='G_front_sup',
                                        hemi='rh', verbose=False)
     label_tmp = label_tmp[0]
     label_tmp = select_sources(subject, label_tmp, location='center',
-                               extent=10, subjects_dir=subjects_dir)
+                               extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
     return source_simulator
