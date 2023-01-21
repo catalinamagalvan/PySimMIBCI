@@ -683,6 +683,11 @@ def cross_validation(dataset, network=None, nGPU=None, random_seed_list=[0]):
     # network initialization details:
     config['loadNetInitState'] = True
     config['pathNetInitState'] = config['network'] + '_' + dataset
+    if os.path.exists(os.path.join(masterPath, 'netInitModels')):
+        for f in os.listdir(os.path.join(masterPath, 'netInitModels')):
+            os.remove(os.path.join(masterPath, 'netInitModels', f))
+    else:
+        os.makedirs(os.path.join(masterPath, 'netInitModels'))
 
     for seed in random_seed_list:
         config['randSeed'] = seed
