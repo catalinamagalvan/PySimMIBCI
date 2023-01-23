@@ -469,5 +469,5 @@ def save_mat_simulated_data(raw, events, spath, fname):
     nfo = {"fs": raw.info['sfreq'], "clab": raw.ch_names}
     mdict = {"cnt": raw_data, "mrk": mrk, "nfo": nfo}
     if not os.path.exists(spath):
-        os.path.makedirs(spath)
+        os.makedirs(spath)
     savemat(os.path.join(spath, fname), mdict)
