@@ -12,6 +12,7 @@ Here, all the functions to generate user-specific MI-EEG data with different cha
 
 ## FBCNet Toolbox:
 
-You will find here all the codes for using the FBCNetToolbox models, which have been adapted from their [original implementation](https://github.com/ravikiran-mane/FBCNet) to include the possibility to employ data augmentation strategies. 
-4. Example_cross_session_data_augmentation.ipynb
-5. Example_cross_validation_simdataset.ipynb
+You will find here all the codes for using the FBCNetToolbox models, which have been adapted from their [original implementation](https://github.com/ravikiran-mane/FBCNet) to include the possibility to employ data augmentation strategies. Two notebooks examples are provided:
+
+1. Example_cross_session_data_augmentation.ipynb, a notebook that shows how simulated MI-EEG data can be employed for data augmentation. FBCNet model is trained without and with data augmentation in a cross-session scenario.
+2. Example_cross_validation_simdataset.ipynb, a notebook that implements a 10-fold cross-validation scenario with simulated MI-EEG data.
