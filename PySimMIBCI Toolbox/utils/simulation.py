@@ -8,6 +8,7 @@ Created on Mon Feb 1 19:31:54 2021
 import numpy as np
 from numpy.matlib import repmat
 from scipy import signal
+from scipy.io import savemat
 from mne import read_labels_from_annot, make_forward_solution
 from mne.label import select_sources
 from mne.datasets import fetch_fsaverage
@@ -436,3 +437,37 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
     source_simulator.add_data(label_tmp, what, event)
 
     return source_simulator
+
+
+def save_mat_simulated_data(raw, events, spath, fname):
+    """
+    Save sim data in a .mat file compatible with FBCNet Toolbox functions.
+
+    Parameters
+    ----------
+    raw : Instance of MNE.io.Raw
+        Raw data to save.
+    events : array of int, shape (n_events, 3)
+        The array of events. The first column contains the event time in
+        samples, with first_samp included. The third column contains the event
+        id.
+    spath : str
+        Saving path.
+    fname : str
+        Saving filename.
+
+    Returns
+    -------
+    None.
+
+    """
+    # Save signals in .mat
+    raw_data = raw.get_data().T
+    pos = events[:, 0]
+    pos = pos[events[:, -1] != 3]
+    mrk = {"pos": pos, "y": events[:, -1][events[:, -1] != 3]}
+    nfo = {"fs": raw.info['sfreq'], "clab": raw.ch_names}
+    mdict = {"cnt": raw_data, "mrk": mrk, "nfo": nfo}
+    if not os.path.exists(spath):
+        os.path.makedirs(spath)
+    savemat(os.path.join(spath, fname), mdict)
