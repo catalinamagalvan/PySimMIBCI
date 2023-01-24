@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Tue Apr 21 17:45:25 2020
-
-@author: cati9
+# Author: Catalina M. Galvan <cgalvan@santafe-conicet.gov.ar>
 """
 
 import numpy as np
