@@ -1,6 +1,4 @@
 
-<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png" width="480">
-
 # PySimMIBCI
 
 You will find here all the codes and instructions needed to reproduce the experiments performed in "A realistic MI-EEG data augmentation approach for improving deep learning in BCI decoding", by Catalina M. Galván, Rubén D. Spies, Diego H. Milone and Victoria Peterson.
@@ -19,3 +17,8 @@ You will find here all the codes for using the FBCNetToolbox models, which have 
 
 1. Example_cross_session_data_augmentation.ipynb, a notebook that shows how simulated MI-EEG data can be employed for data augmentation. FBCNet model is trained without and with data augmentation in a cross-session scenario.
 2. Example_cross_validation_simdataset.ipynb, a notebook that implements a 10-fold cross-validation scenario with simulated MI-EEG data.
+
+<p align="center">
+<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png" width="480">
+</p>
+
