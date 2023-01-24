@@ -1,5 +1,5 @@
 
-<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png" width="48">
+<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png" width="480">
 
 # PySimMIBCI
 
