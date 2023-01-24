@@ -19,6 +19,6 @@ You will find here all the codes for using the FBCNetToolbox models, which have 
 2. Example_cross_validation_simdataset.ipynb, a notebook that implements a 10-fold cross-validation scenario with simulated MI-EEG data.
 
 <p align="center">
-<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png" width="800">
+<img src="https://user-images.githubusercontent.com/79813952/214366805-56252321-18ce-4787-8561-0d2f7b61594d.png">
 </p>
 
