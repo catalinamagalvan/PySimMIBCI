@@ -20,9 +20,8 @@
          4. outFolder -> the folder where the results will be stored.
          5. preferedDevice -> 'gpu'/'cpu' -> will run on gpu only if it's
              available
-    TODO: Include a learning rate scheduler in _trainOE.
-    TODO: Add a good hyper-parameter optimizer in the train.
-    @author: Ravikiran Mane
+    @author: Ravikiran Mane, modified by Catalina Galvan,
+    cgalvan@santafe-conicet.gov.ar
 """
 
 # To do deep learning
