@@ -1,10 +1,7 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Wed Jun 15 15:56:31 2022
+# Author: Catalina M. Galvan <cgalvan@santafe-conicet.gov.ar>
+"""
 
-@author: catalina
-"""
 import numpy as np
 from fooof import FOOOF
 from fooof.analysis import get_band_peak_fm
