@@ -1,10 +1,13 @@
-# Hold out classification analysis of BCI Comp IV-2a and Korea datasets
-# @author: Ravikiran Mane
+"""
+Hold out classification analysis of BCI Comp IV-1, Korea (OpenBMI) and
+simulated datasets.
+@author: Ravikiran Mane, modified by Catalina Galvan,
+cgalvan@santafe-conicet.gov.ar
+"""
 import numpy as np
 import torch
 import os
 import time
-import xlwt
 import csv
 import math
 import copy

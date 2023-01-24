@@ -1,7 +1,7 @@
 """
 Data processing functions for EEG data.
-
-@author: Ravikiran Mane. Modified by Catalina Galvan.
+@author: Ravikiran Mane. Modified by Catalina Galvan,
+ cgalvan@santafe-conicet.gov.ar
 """
 import numpy as np
 from scipy.io import loadmat, savemat
