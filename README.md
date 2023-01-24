@@ -16,3 +16,4 @@ You will find here all the codes for using the FBCNetToolbox models, which have 
 
 1. Example_cross_session_data_augmentation.ipynb, a notebook that shows how simulated MI-EEG data can be employed for data augmentation. FBCNet model is trained without and with data augmentation in a cross-session scenario.
 2. Example_cross_validation_simdataset.ipynb, a notebook that implements a 10-fold cross-validation scenario with simulated MI-EEG data.
+![Figure 1](https://user-images.githubusercontent.com/79813952/214365298-2690c289-8e4a-4561-ad57-c1320864030b.png)
