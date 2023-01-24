@@ -1,8 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Feb 1 19:31:54 2021
-
-@author: catal
+# Author: Catalina M. Galvan <cgalvan@santafe-conicet.gov.ar>
 """
 
 import numpy as np
@@ -17,7 +14,24 @@ import os
 
 
 def set_up_source_forward(subject, info):
-    # Setup source space and compute forward solution
+    """
+    Set up source space and compute forward solution
+
+    Parameters
+    ----------
+    subject : str
+        The FreeSurfer subject name.
+    info : instance of MNE Info
+        Corresponding MNE Info object.
+
+    Returns
+    -------
+    fwd : Instance of MNE Forward
+        The forward solution.
+    source_simulator : Instance of MNE SourceSimulator
+        Corresponding object to generate simulated Source Estimates.
+
+    """
     # Download head model (fsaverage) files
     fs_dir = fetch_fsaverage(verbose=False)
     src = os.path.join(fs_dir, 'bem', 'fsaverage-ico-5-src.fif')
@@ -33,6 +47,25 @@ def set_up_source_forward(subject, info):
 
 
 def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
+    """
+    Set up alpha peak amplitudes for right vs left hand MI tasks.
+
+    Parameters
+    ----------
+    MI_tasks : list of str
+        List of MI tasks names.
+    user_peak_params : dict
+        User-specific peak parameters.
+    reduction : float, optional
+        Float in the range (0, 1). The percentage of desynchronization for
+        alpha ERDs. The default is 0.5.
+
+    Returns
+    -------
+    simulation_peak_params : TYPE
+        DESCRIPTION.
+
+    """
     labels_names = user_peak_params.keys()
     simulation_peak_params = {}
     for label in labels_names:
@@ -50,6 +83,41 @@ def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
 
 def generate_what_failed(MI_tasks, events, user_params, MI_duration, sfreq,
                          N_trials, reduction, p_failed):
+    """
+    Generate waveform (what) dictionary with the inclusion of a percentage of
+    trials without ERD.
+
+    Parameters
+    ----------
+    MI_tasks : list of str
+        List of MI tasks names.
+    events : array of int, shape (n_events, 3)
+        Events associated to the waveform(s) to specify when the activity
+        should occur.
+    user_params :  dict
+        User-specific parameters.
+    MI_duration : int
+        MI trials duration in ms.
+    sfreq : int
+        The sampling frequency.
+    N_trials : int
+        The number of trials to generate.
+    reduction : float
+        Float in the range (0, 1). The percentage of desynchronization for
+        alpha ERDs.
+    p_failed : float
+        Float in the range (0, 1). The percentage of trials without ERD.
+
+    Returns
+    -------
+    MI_activity_epoched : dict
+        The keys of the dictionary are the different labels. Each element in
+        the dictionary is another dictionary that has the different MI tasks
+        as keys. For each label and MI task there is an array, of shape
+        (n_events, n_times) that corresponds to the waveform describing the
+        activity on that label for that MI task and for each of the events.
+
+    """
     peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
                                       reduction=reduction)
     aperiodic_params = user_params['aperiodic_params']
@@ -128,7 +196,38 @@ def generate_what_failed(MI_tasks, events, user_params, MI_duration, sfreq,
 
 def generate_what(MI_tasks, events, user_params, MI_duration, sfreq, N_trials,
                   reduction):
+    """
+    Generate waveform (what) dictionary.
 
+    Parameters
+    ----------
+    MI_tasks : list of str
+        List of MI tasks names.
+    events : array of int, shape (n_events, 3)
+        Events associated to the waveform(s) to specify when the activity
+        should occur.
+    user_params :  dict
+        User-specific parameters.
+    MI_duration : int
+        MI trials duration in ms.
+    sfreq : int
+        The sampling frequency.
+    N_trials : int
+        The number of trials to generate.
+    reduction : float
+        Float in the range (0, 1). The percentage of desynchronization for
+        alpha ERDs.
+
+    Returns
+    -------
+    MI_activity_epoched : dict
+        The keys of the dictionary are the different labels. Each element in
+        the dictionary is another dictionary that has the different MI tasks
+        as keys. For each label and MI task there is an array, of shape
+        (n_events, n_times) that corresponds to the waveform describing the
+        activity on that label for that MI task and for each of the events.
+
+    """
     peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
                                       reduction=reduction)
     aperiodic_params = user_params['aperiodic_params']
@@ -176,25 +275,31 @@ def generate_when(events_info, N_trials, sfreq, include_rest=False,
                   rest_duration=2000, include_baseline=False,
                   baseline_duration=5000):
     """
-    Create events matrix.
+    Create events matrix (when).
 
     Parameters
     ----------
     events_info : dict
         label: events label
-        duration: events duration in ms
-    n_trials : int
+        duration: events duration in ms.
+    N_trials : int
         number of trials.
+    sfreq : int
+        the sampling frequency in Hz.
     include_rest : bool, optional
-        include or not rest segments. The default is True.
-    rest_duration: int
-        rest segment duration in ms
-    sample_freq:
-        sample frequency in Hz
+        whether to include or not rest segments. The default is False.
+    rest_duration : int
+        rest segments duration in ms if include_rest=True.
+    include_baseline : bool, optional
+        whether to include or not baseline segment. The default is False.
+   baseline_duration : int
+        baseline segment duration in ms if include_baseline=True.
 
     Returns
     -------
-    events : array [n_events x 3]
+    events : array of int, shape (n_events, 3)
+        Events associated to the waveform that specify when the activity
+        should occur.
         first column: sample numbers corresponding to each event
         last column: event ID
 
@@ -246,18 +351,18 @@ def generate_when(events_info, N_trials, sfreq, include_rest=False,
 
 def generate_where(subject):
     """
-    Generate
+    Generate spatial labels to hand MI tasks.
 
     Parameters
     ----------
-    subject : TYPE
-        DESCRIPTION.
-        DESCRIPTION.
+    subject : str
+        The FreeSurfer subject name.
 
     Returns
     -------
     where : list of mne.Label
-        DESCRIPTION.
+        List of labels that contains the selected sources in the hand motor
+        cortex at left and right hemispheres.
 
     """
     labels_names = ['G_precentral-lh', 'G_precentral-rh']
@@ -274,63 +379,96 @@ def generate_where(subject):
 
 
 def theta_activity(N_samples, sfreq, increase=1):
-    # All sources are independent gaussian
+    """
+    Generate theta band activity.
+
+    Parameters
+    ----------
+    N_samples : int
+        Number of samples to generate.
+    sfreq : int
+        Sampling frequency in Hertz.
+    increase : float, optional
+        Multiplier of theta activity. The default is 1.
+
+    Returns
+    -------
+    source_theta_activity : numpy array, (N_samples,)
+        The source activity in theta band.
+
+    """
+    # All sources are  gaussian
     rng = np.random.default_rng()
-    #non_filtered_activity = rng.normal(loc=7, size=N_samples)
     non_filtered_activity = rng.normal(loc=3.5, size=N_samples)
     # Filter to a narrow band
     sos = signal.butter(2, (4, 8),
                         'bandpass', fs=sfreq, output='sos')
-    source_activity = signal.sosfilt(sos, non_filtered_activity)
+    source_theta_activity = signal.sosfilt(sos, non_filtered_activity)
     # Increase theta activity in the fatigue condition
     if increase != 1:
-        mask = np.linspace(0, increase, len(source_activity))
-        source_activity *= mask
-    return 1e-8*source_activity
+        mask = np.linspace(0, increase, len(source_theta_activity))
+        source_theta_activity *= mask
+    source_theta_activity = 1e-8*source_theta_activity
+    return source_theta_activity
 
 
 def alpha_activity(N_samples, sfreq, increase=1):
-    # All sources are independent gaussian
+    """
+    Generate alpha band activity.
+
+    Parameters
+    ----------
+    N_samples : int
+        Number of samples to generate.
+    sfreq : int
+        Sampling frequency in Hertz.
+    increase : float, optional
+        Multiplier of theta activity. The default is 1.
+
+    Returns
+    -------
+    source_alpha_activity : numpy array, (N_samples,)
+        The source activity in alpha band.
+
+    """
+    # All sources are gaussian
     rng = np.random.default_rng()
-    # non_filtered_activity = rng.normal(loc=7.8, size=N_samples)
     non_filtered_activity = rng.normal(loc=4, size=N_samples)
     # Filter to a narrow band
     sos = signal.butter(2, (8, 13),
                         'bandpass', fs=sfreq, output='sos')
-    source_activity = signal.sosfilt(sos, non_filtered_activity)
-    # Increase theta activity in the fatigue condition
+    source_alpha_activity = signal.sosfilt(sos, non_filtered_activity)
+    # Increase alpha activity in the fatigue condition
     if increase != 1:
-        mask = np.linspace(0, increase, len(source_activity))
-        source_activity *= mask
-    return 1e-8*source_activity
+        mask = np.linspace(0, increase, len(source_alpha_activity))
+        source_alpha_activity *= mask
+    return 1e-8*source_alpha_activity
 
 
 def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
     """
-    Function to add fatigue effects to source_simulator object.
-
+    Add basal theta band activity to source_simulator object.
     Mental fatigue is associated with increased power in frontal theta (θ) and
     parietal alpha (α) EEG rhythms. Returns modified SourceSimulator object.
 
     Parameters
     ----------
-    source_simulator : mne.simulation.SourceSimulator object
-        DESCRIPTION.
+    source_simulator : Instance of MNE SourceSimulator object
+        The mne.simulation.SourceSimulator object to modify.
     fatigue_start : int
         Time fatigue starts in % of the total length of the session.
 
     Returns
     -------
-    None.
+    source_simulator : Instance of MNE SourceSimulator object.
+        The mne.simulation.SourceSimulator instance modified in-place.
 
     """
     annot = 'aparc.a2009s'
-
-    # Add alpha and theta activiy in alert condition
     event = np.array([0, 0, 4])[np.newaxis]
     N_samples_alert = int(fatigue_start*source_simulator.n_times)
 
-    # Add alpha activity
+    # Add alpha activiy in alert condition
     what = alpha_activity(N_samples_alert,
                           sfreq=int(1/source_simulator._tstep))
     label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
@@ -349,7 +487,7 @@ def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
                                extent=5)
     source_simulator.add_data(label_tmp, what, event)
 
-    # Add theta activity
+    # Add theta activiy in alert condition
     what = theta_activity(N_samples_alert,
                           sfreq=int(1/source_simulator._tstep))
     label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
@@ -374,27 +512,27 @@ def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
 def add_fatigue_effect(source_simulator, fatigue_start, subject,
                        annot='aparc.a2009s'):
     """
-    Function to add fatigue effects to source_simulator object.
-
+    Add fatigue effects to source_simulator object.
     Mental fatigue is associated with increased power in frontal theta (θ) and
     parietal alpha (α) EEG rhythms. Returns modified SourceSimulator object.
 
     Parameters
     ----------
-    source_simulator : mne.simulation.SourceSimulator object
-        DESCRIPTION.
+    source_simulator : Instance of MNE SourceSimulator object
+        The mne.simulation.SourceSimulator object to modify.
     fatigue_start : int
         Time fatigue starts in % of the total length of the session.
 
     Returns
     -------
-    None.
+    source_simulator : Instance of MNE SourceSimulator object.
+        The mne.simulation.SourceSimulator instance modified in-place.
 
     """
 
-    # Add alpha and theta activiy in fatigue condition
     N_samples_alert = int(fatigue_start*source_simulator.n_times)
     event = np.array([N_samples_alert, 0, 5])[np.newaxis]
+    # Add alpha activiy in fatigue condition
     N_samples_fatigue = source_simulator.n_times - N_samples_alert
 
     what = alpha_activity(N_samples_fatigue,
@@ -416,7 +554,7 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
                                extent=10)
     source_simulator.add_data(label_tmp, what, event)
 
-    # Add theta activity
+    # Add theta activiy in fatigue condition
     what = theta_activity(N_samples_fatigue,
                           sfreq=int(1/source_simulator._tstep),
                           increase=40*1.3)
@@ -441,7 +579,8 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
 
 def save_mat_simulated_data(raw, events, spath, fname):
     """
-    Save sim data in a .mat file compatible with FBCNet Toolbox functions.
+    Save simulated data in a .mat file compatible with FBCNet Toolbox
+    functions.
 
     Parameters
     ----------
