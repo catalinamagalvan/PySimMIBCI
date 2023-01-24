@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
-Created on Tue Feb 23 11:10:38 2021
+# Author: Catalina M. Galvan <cgalvan@santafe-conicet.gov.ar>
+"""
 
-@author: catal
-"""
 import numpy as np
 from numpy import einsum
 from mne import make_ad_hoc_cov, Covariance
@@ -17,12 +15,28 @@ from mne.utils import (logger, _check_preload)
 from mne._ola import _Interp2
 from mne.bem import fit_sphere_to_headshape, make_sphere_model
 from mne.source_space import setup_volume_source_space
-from mne.utils import (check_random_state, _validate_type, _check_preload)
+from mne.utils import (check_random_state)
 from mne.simulation.raw import (_check_head_pos, _SimForwards)
 import colorednoise as cn
 
 
 def make_noise_cov(info):
+    """
+    Generate noise covariance matrix based on electrode distances: closer
+    electrodes have stronger correlation (gaussian weighted distance).
+
+
+    Parameters
+    ----------
+    info : instance of MNE Info
+        Corresponding MNE Info object.
+
+    Returns
+    -------
+    cov_cross_spec : instance of MNE Covariance
+        DESCRIPTION.
+
+    """
     noise_cov = make_ad_hoc_cov(info)
     names = noise_cov.ch_names
     bads = []
@@ -42,6 +56,8 @@ def make_noise_cov(info):
         pos[ci] = ch['loc'][:3]
 
     cross_spec = np.zeros((n_channels, n_channels))
+    # Weight the spectrum so that channels which are close by are more
+    # correlated (gaussian weighted distance)
     for i in range(n_channels):
         for j in range(n_channels):
             d = np.linalg.norm(pos[i]-pos[j], 2)
@@ -54,7 +70,42 @@ def make_noise_cov(info):
 
 def _generate_pink_noise(info, cov, n_samples, picks=None, exponent=1.7,
                          random_state=None):
-    """Create spatially colored and temporally IIR-filtered noise."""
+    """
+    Create spatially colored and temporally Gaussian distributed noise with a
+    power law spectrum with specified exponent.
+
+    Parameters
+    ----------
+    info : instance of MNE Info
+        Corresponding MNE Info object.
+    cov : instance of MNE Covariance
+        Corresponding MNE Covariance object.
+    n_samples : int
+        Number of samples to generate the noise.
+    picks : str | array_like | slice | None
+        Channels to include. Slices and lists of integers will be interpreted
+        as channel indices. In lists, channel type strings (e.g., ['meg',
+        'eeg']) will pick channels of those types, channel name strings (e.g.,
+        ['MEG0111', 'MEG2623'] will pick the given channels. Can also be the
+        string values “all” to pick all channels, or “data” to pick data
+        channels. None (default) will pick all channels. Note that channels in
+        info['bads'] will be included if their names or indices are explicitly
+        provided.The default is None.
+    exponent : float, optional
+        The exponent (k) of the 1/(f**k) noise. The default is 1.7.
+    random_state : int | numpy.integer | numpy.random.Generator |
+                   numpy.random.RandomState | None
+        NumPy's random number generator.
+        Integer-compatible values or None are passed to np.random.default_rng.
+        np.random.RandomState or np.random.Generator are used directly. The
+        default is None.
+
+    Returns
+    -------
+    noise_matrix: numpy.array
+        The noise matrix, of dimension n channels x n samples.
+
+    """
     dim = cov['dim']
 
     noise_matrix = np.empty((dim, n_samples))
@@ -67,9 +118,6 @@ def _generate_pink_noise(info, cov, n_samples, picks=None, exponent=1.7,
     # 1/freq power law here.
     # n.b. In total, this probably resembles generating pink noise and
     # enforcing a spatial cov structure for it.
-    # [E,D] = eig(spectralModel.crossSpectrum);
-    # D: matriz diagonal que contiene los autovalores
-    # E: matriz que contiene los autovalores
     D, E = np.linalg.eig(cov['data'])
     D = np.diag(D)
 
@@ -80,30 +128,35 @@ def _generate_pink_noise(info, cov, n_samples, picks=None, exponent=1.7,
 
 
 def add_aperiodic_activity(inst, allow_subselection=True, exponent=1.7,
-                           offset=(np.sqrt(1/0.005)), random_state=None):
-    """Create noise as a multivariate Gaussian.
-    The spatial covariance of the noise is given from the cov matrix.
+                           offset=0, random_state=None):
+    """
+    Applies spatially colored and temporally Gaussian distributed noise.
+
     Parameters
     ----------
     inst : instance of Evoked, Epochs, or Raw
-        Instance to which to add noise.
-    cov : instance of Covariance
-        The noise covariance.
-    iir_filter : None | array-like
-        IIR filter coefficients (denominator).
-    %(random_state)s
-    %(verbose)s
+        Instance to which add noise.
+    allow_subselection : bool, optional
+        Whether to allow channel subselection based on info. The default is
+        True.
+    exponent : float, optional
+        The exponent (k) of the 10**b 1/(f**k) noise. The default is 1.7.
+    offset : float, optional
+        The offset (b) in the 10**b 1/(f**k) noise. The default is 0.
+    random_state : int | numpy.integer | numpy.random.Generator |
+                   numpy.random.RandomState | None
+        NumPy's random number generator.
+        Integer-compatible values or None are passed to np.random.default_rng.
+        np.random.RandomState or np.random.Generator are used directly. The
+        default is None.
+
     Returns
     -------
     inst : instance of Evoked, Epochs, or Raw
-        The instance, modified to have additional noise.
-    Notes
-    -----
-    Only channels in both ``inst.info['ch_names']`` and
-    ``cov['names']`` will have noise added to them.
-    This function operates inplace on ``inst``.
-    .. versionadded:: 0.18.0
+        Instance modified in-place.
+
     """
+
     cov = make_noise_cov(inst.info)
     offset = offset/2
 
@@ -143,13 +196,34 @@ def add_eye_movement(raw, head_pos=None, interp='cos2', n_jobs=1,
     ----------
     raw : instance of Raw
         The raw instance to modify.
-    %(head_pos)s
-    %(interp)s
-    %(n_jobs)s
-    %(random_state)s
-        The random generator state used for blink, ECG, and sensor noise
-        randomization.
-    %(verbose)s
+    head_pos: None | str | dict | tuple | array
+        Name of the position estimates file. Should be in the format of the
+        files produced by MaxFilter. If dict, keys should be the time points
+        and entries should be 4x4 dev_head_t matrices. If None, the original
+        head position (from info['dev_head_t']) will be used. If tuple, should
+        have the same format as data returned by head_pos_to_trans_rot_t. If
+        array, should be of the form returned by mne.chpi.read_head_pos().
+    interp: str
+        Either ‘hann’, ‘cos2’ (default), ‘linear’, or ‘zero’, the type of
+        forward-solution interpolation to use between forward solutions at
+        different head positions.
+    n_jobs: int | None
+        The number of jobs to run in parallel. If -1, it is set to the number
+        of CPU cores. Requires the joblib package. None (default) is a marker
+        for ‘unset’ that will be interpreted as n_jobs=1 (sequential execution)
+        unless the call is performed under a joblib.parallel_backend() context
+        manager that sets another value for n_jobs.
+    random_state: None | int | instance of RandomState
+        A seed for the NumPy random number generator (RNG). If None (default),
+        the seed will be obtained from the operating system (see RandomState
+        for details), meaning it will most likely produce different output
+        every time this function or method is run. To achieve reproducible
+        results, pass a value here to explicitly initialize the RNG with a
+        defined state. The random generator state used for noise randomization.
+    verbose: bool | str | int | None
+        Control verbosity of the logging output. If None, use the default
+        verbosity level. See the logging documentation and mne.verbose() for
+        details. Should only be passed as a keyword argument.
 
     Returns
     -------
@@ -166,15 +240,12 @@ def add_eye_movement(raw, head_pos=None, interp='cos2', n_jobs=1,
 
     Notes
     -----
-    The blink artifacts are generated by:
-    1. Random activation times are drawn from an inhomogeneous poisson
-       process whose blink rate oscillates between 4.5 blinks/minute
-       and 17 blinks/minute based on the low (reading) and high (resting)
-       blink rates from [1]_.
-    2. The activation kernel is a 250 ms Hanning window.
-    3. Two activated dipoles are located in the z=0 plane (in head
-       coordinates) at ±30 degrees away from the y axis (nasion).
-    4. Activations affect MEG and EEG channels.
+    The eye-movement artifacts are generated by:
+    1. Random activation times are drawn from an homogeneus poisson.
+    2. Two activated dipoles are located in the z=0 plane (in head
+       coordinates) at ±30 degrees away from the y axis (nasion), as in
+       mne.simulation.add_eog function.
+    3. Activations affect MEG and EEG channels.
 
     The scale-factor of the activation function was chosen based on
     visual inspection to yield amplitudes generally consistent with those
@@ -191,6 +262,9 @@ def add_eye_movement(raw, head_pos=None, interp='cos2', n_jobs=1,
 
 
 def add_exg(raw, kind, head_pos, interp, n_jobs, random_state):
+    """
+    Modification of add_exg function in mne.simulation.raw.
+    """
     assert isinstance(kind, str) and kind in ('ecg', 'blink', 'eye_movement')
     _validate_type(raw, BaseRaw, 'raw')
     _check_preload(raw, 'Adding %s noise ' % (kind,))
