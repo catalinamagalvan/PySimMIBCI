@@ -43,8 +43,6 @@ def parseKoreaSimFile(dataPath, epochWindow=[0, 2], chans=None,
         c: list of channels - can be list of ints.
     """
 
-    offset = 0
-
     # read the mat file:
     data = loadmat(dataPath)
 
@@ -62,7 +60,7 @@ def parseKoreaSimFile(dataPath, epochWindow=[0, 2], chans=None,
     mrk = data['mrk']  # Samples of start of each trial
     trial = mrk[0][0]['pos'][0]
     epochInterval = np.array(range(epochWindow[0]*s,
-                                   int(epochWindow[1]*s)))+int(offset*s)
+                                   int(epochWindow[1]*s)))
     x = np.stack([eeg[:, epochInterval+event] for event in trial], axis=2)
     y = mrk[0][0]['y'][0]
     # change the labels from [2, 1] to [0, 1]
@@ -112,8 +110,6 @@ def parseBci41SimFile(dataPath, epochWindow=[0, 2], chans=None,
         c: list of channels - can be list of ints.
     """
 
-    offset = 0
-
     # read the mat file:
     data = loadmat(dataPath)
 
@@ -131,7 +127,7 @@ def parseBci41SimFile(dataPath, epochWindow=[0, 2], chans=None,
     mrk = data['mrk']  # Samples of start of each trial
     trial = mrk[0][0]['pos'][0]
     epochInterval = np.array(range(epochWindow[0]*s,
-                                   int(epochWindow[1]*s)))+int(offset*s)
+                                   int(epochWindow[1]*s)))
     x = np.stack([eeg[:, epochInterval+event] for event in trial], axis=2)
     y = mrk[0][0]['y'][0]
     # change the labels from [2, 1] to [1, 0]
@@ -351,7 +347,6 @@ def parseSimBci41File(dataPath, epochWindow=[0, 2], chans=list(range(41)),
         c: list of channels - can be list of ints.
     """
     fs = 1000
-    offset = 0
 
     # read the mat file:
     data = loadmat(dataPath)
@@ -372,7 +367,7 @@ def parseSimBci41File(dataPath, epochWindow=[0, 2], chans=list(range(41)),
     mrk = data['mrk']  # Samples of start of each trial
     trial = mrk[0][0]['pos'][0]
     epochInterval = np.array(range(epochWindow[0]*fs,
-                                   int(epochWindow[1]*fs)))+int(offset*fs)
+                                   int(epochWindow[1]*fs)))
     x = np.stack([eeg[:, epochInterval+event] for event in trial], axis=2)
     y = mrk[0][0]['y'][0]
     # change the labels from [2, 1] to [1, 0]
@@ -423,7 +418,6 @@ def parseBci41File(dataPath, epochWindow=[0, 4],
     """
     fs = 1000
     offset = 0.5  # original
-    # offset = 0
 
     # read the mat file:
     data = loadmat(dataPath)
