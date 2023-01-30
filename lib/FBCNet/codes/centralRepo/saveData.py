@@ -52,8 +52,6 @@ def parseKoreaSimFile(dataPath, epochWindow=[0, 2], chans=None,
     s = nfo['fs'][0][0]
     s = int(s)
     eeg = data['cnt']
-    # eeg = 0.1*np.double(eeg)  # Complete EEG signal
-    # eeg = 1e6 * eeg  # In microV
     eeg = eeg.T
 
     # drop channels
@@ -123,8 +121,6 @@ def parseBci41SimFile(dataPath, epochWindow=[0, 2], chans=None,
     s = nfo['fs'][0][0]
     s = int(s)
     eeg = data['cnt']
-    # eeg = 0.1*np.double(eeg)  # Complete EEG signal
-    # eeg = 1e6 * eeg  # In microV
     eeg = eeg.T
 
     # drop channels
@@ -746,8 +742,6 @@ def matToPython(datasetPath, savePath, isFiltered=False):
 
     for i, d in enumerate(data):
         sub = d['fileName'][-7:-4]  # subject of the data
-        # sub = int(d['fileName'][-7:-4])  # subject of the data
-        # sub = str(sub).zfill(3)
 
         if d['fileName'][1] == 'e':
             session = 1
