@@ -3,9 +3,11 @@
 
 You will find here all the codes and instructions needed to reproduce the experiments performed in "A realistic MI-EEG data augmentation approach for improving deep learning in BCI decoding", by Catalina M. Galván, Rubén D. Spies, Diego H. Milone and Victoria Peterson.
 
+![Figure 1 fondo blanco](https://user-images.githubusercontent.com/79813952/214372976-539d3e5c-eec8-4925-b8ac-a3dd3cfecf62.png)
+
 ## PySimMIBCI Toolbox
 
-Here, all the functions to generate user-specific MI-EEG data with different characteristics are given. Three notebooks example are included: 
+Here, all the functions to generate user-specific MI-EEG data with different characteristics are provided in src. 
 
 1. Example_generate_data_for_augmentation.ipynb, a notebook in which extraction of periodic and aperiodic parameters from real MI-EEG data is implemented and then data that can be used for data augmentation is generated using these user-specific parameters.
 2. Example_generate_data_fatigue.ipynb, a notebook that shows the simulation of MI-EEG data with fatigue effects.
@@ -19,4 +21,4 @@ You will find here all the codes for using the FBCNetToolbox models, which have 
 2. Example_cross_validation_simdataset.ipynb, a notebook that implements a 10-fold cross-validation scenario with simulated MI-EEG data.
 
 
-![Figure 1 fondo blanco](https://user-images.githubusercontent.com/79813952/214372976-539d3e5c-eec8-4925-b8ac-a3dd3cfecf62.png)
+
