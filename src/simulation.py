@@ -49,36 +49,112 @@ def set_up_source_forward(subject, info):
 def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
     """
     Set up alpha peak amplitudes for right vs left hand MI tasks.
-
     Parameters
     ----------
     MI_tasks : list of str
-        List of MI tasks names.
+        List of MI tasks names. Possible tasks: MI/left, MI/right and rest.
     user_peak_params : dict
         User-specific peak parameters.
     reduction : float, optional
         Float in the range (0, 1). The percentage of desynchronization for
         alpha ERDs. The default is 0.5.
-
     Returns
     -------
     simulation_peak_params : TYPE
         DESCRIPTION.
-
     """
     labels_names = user_peak_params.keys()
-    simulation_peak_params = {}
+    simulation_peak_params = dict()
     for label in labels_names:
-        simulation_peak_params[label] = {}
+        simulation_peak_params[label] = dict()
         for task in MI_tasks:
             simulation_peak_params[label][task] = user_peak_params[label][:]
-    # Fixed amplitude
-    simulation_peak_params['G_precentral-lh']['MI/left'][1] = 0.4
-    simulation_peak_params['G_precentral-rh']['MI/right'][1] = 0.4
-    simulation_peak_params['G_precentral-lh']['MI/right'][1] = 0.4*(
-        1-reduction)
-    simulation_peak_params['G_precentral-rh']['MI/left'][1] = 0.4*(1-reduction)
+    if 'MI/left' in MI_tasks:
+        simulation_peak_params['G_precentral-lh']['MI/left'][1] = 0.4
+        simulation_peak_params['G_precentral-rh']['MI/left'][1] = 0.4*(
+            1-reduction)
+    if 'MI/right' in MI_tasks:
+        simulation_peak_params['G_precentral-rh']['MI/right'][1] = 0.4
+        simulation_peak_params['G_precentral-lh']['MI/right'][1] = 0.4*(
+            1-reduction)
+    if 'rest' in MI_tasks:
+        simulation_peak_params['G_precentral-rh']['rest'][1] = 0.4
+        simulation_peak_params['G_precentral-lh']['rest'][1] = 0.4
     return simulation_peak_params
+
+
+def generate_what(MI_tasks, events, user_params, MI_duration, sfreq, N_trials,
+                  reduction):
+    """
+    Generate waveform (what) dictionary.
+    Parameters
+    ----------
+    MI_tasks : list of str
+        List of MI tasks names.
+    events : array of int, shape (n_events, 3)
+        Events associated to the waveform(s) to specify when the activity
+        should occur.
+    user_params :  dict
+        User-specific parameters.
+    MI_duration : int
+        MI trials duration in ms.
+    sfreq : int
+        The sampling frequency.
+    N_trials : int
+        The number of trials to generate.
+    reduction : float
+        Float in the range (0, 1). The percentage of desynchronization for
+        alpha ERDs.
+    Returns
+    -------
+    MI_activity_epoched : dict
+        The keys of the dictionary are the different labels. Each element in
+        the dictionary is another dictionary that has the different MI tasks
+        as keys. For each label and MI task there is an array, of shape
+        (n_events, n_times) that corresponds to the waveform describing the
+        activity on that label for that MI task and for each of the events.
+    """
+    peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
+                                      reduction=reduction)
+    aperiodic_params = user_params['aperiodic_params']
+    labels_names = peak_params.keys()
+    N_samples_trial = int(np.round(MI_duration/1000*sfreq))
+    N_samples = int(events[-1, 0]) + N_samples_trial
+    N_samples_class = int(N_samples//len(MI_tasks))
+    N_trials_class = N_trials//len(MI_tasks)
+    MI_activity = dict()
+
+    # Create raw
+    for label in labels_names:
+        MI_activity[label] = dict()
+        for task in MI_tasks:
+            # Only one peak
+            peak = peak_params[label][task][:]
+            MI_activity[label][task] = np.zeros(N_samples_class)
+            non_filtered_activity = np.random.randn(1, N_samples_class)
+            cf = peak[0]
+            # aperiodic component in linear space
+            offset = aperiodic_params[0]/2
+            exponent = aperiodic_params[1]
+            aperiodic_f = 10**offset/(cf**exponent)
+            # Filter in alpha band
+            pw = aperiodic_f*10**(peak[1])
+            bw = peak[2]
+            sos = signal.butter(2, (cf-bw/2, cf+bw/2),
+                                'bandpass', fs=sfreq, output='sos')
+            aux = signal.sosfilt(sos, non_filtered_activity[0])
+            MI_activity[label][task] += 1e-4*pw*aux
+
+    MI_activity_epoched = dict()
+    for label in labels_names:
+        MI_activity_epoched[label] = dict()
+        for task in MI_tasks:
+            MI_activity_epoched[label][task] = np.empty((N_trials_class,
+                                                         N_samples_trial))
+            for t in range(N_trials_class):
+                MI_activity_epoched[label][task][t] = MI_activity[label][
+                    task][t*N_samples_trial:(t+1)*N_samples_trial]
+    return MI_activity_epoched
 
 
 def generate_what_failed(MI_tasks, events, user_params, MI_duration, sfreq,
@@ -191,83 +267,6 @@ def generate_what_failed(MI_tasks, events, user_params, MI_duration, sfreq,
                 else:
                     MI_activity_epoched[label][task][t] = MI_activity[label][
                         task][t*N_samples_trial:(t+1)*N_samples_trial]
-    return MI_activity_epoched
-
-
-def generate_what(MI_tasks, events, user_params, MI_duration, sfreq, N_trials,
-                  reduction):
-    """
-    Generate waveform (what) dictionary.
-
-    Parameters
-    ----------
-    MI_tasks : list of str
-        List of MI tasks names.
-    events : array of int, shape (n_events, 3)
-        Events associated to the waveform(s) to specify when the activity
-        should occur.
-    user_params :  dict
-        User-specific parameters.
-    MI_duration : int
-        MI trials duration in ms.
-    sfreq : int
-        The sampling frequency.
-    N_trials : int
-        The number of trials to generate.
-    reduction : float
-        Float in the range (0, 1). The percentage of desynchronization for
-        alpha ERDs.
-
-    Returns
-    -------
-    MI_activity_epoched : dict
-        The keys of the dictionary are the different labels. Each element in
-        the dictionary is another dictionary that has the different MI tasks
-        as keys. For each label and MI task there is an array, of shape
-        (n_events, n_times) that corresponds to the waveform describing the
-        activity on that label for that MI task and for each of the events.
-
-    """
-    peak_params = set_peak_amplitudes(MI_tasks, user_params['peak_params'],
-                                      reduction=reduction)
-    aperiodic_params = user_params['aperiodic_params']
-    labels_names = peak_params.keys()
-    N_samples_trial = int(np.round(MI_duration/1000*sfreq))
-    N_samples = int(events[-1, 0]) + N_samples_trial
-    N_samples_class = int(N_samples//len(MI_tasks))
-    N_trials_class = N_trials//len(MI_tasks)
-    MI_activity = dict()
-
-    # Create raw
-    for label in labels_names:
-        MI_activity[label] = dict()
-        for task in MI_tasks:
-            # Only one peak
-            peak = peak_params[label][task]
-            MI_activity[label][task] = np.zeros(N_samples_class)
-            non_filtered_activity = np.random.randn(1, N_samples_class)
-            cf = peak[0]
-            # aperiodic component in linear space
-            offset = aperiodic_params[0]/2
-            exponent = aperiodic_params[1]
-            aperiodic_f = 10**offset/(cf**exponent)
-            # Filter in alpha band
-            pw = aperiodic_f*10**(peak[1])
-            bw = peak[2]
-            sos = signal.butter(2, (cf-bw/2, cf+bw/2),
-                                'bandpass', fs=sfreq, output='sos')
-            aux = signal.sosfilt(sos, non_filtered_activity[0])
-            MI_activity[label][task] += 1e-4*pw*aux
-
-    MI_activity_epoched = dict()
-    for label in labels_names:
-        MI_activity_epoched[label] = dict()
-        for task in MI_tasks:
-            MI_activity_epoched[label][task] = np.empty((N_trials_class,
-                                                         N_samples_trial))
-            for t in range(N_trials_class):
-                MI_activity_epoched[label][task][t] = MI_activity[label][
-                    task][t*N_samples_trial:(t+1)*N_samples_trial]
     return MI_activity_epoched
 
 
