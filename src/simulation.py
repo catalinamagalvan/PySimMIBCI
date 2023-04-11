@@ -71,7 +71,7 @@ def set_peak_amplitudes(MI_tasks, user_peak_params, reduction=0.5):
     for label in labels_names:
         simulation_peak_params[label] = {}
         for task in MI_tasks:
-            simulation_peak_params[label][task] = user_peak_params[label]
+            simulation_peak_params[label][task] = user_peak_params[label][:]
     # Fixed amplitude
     simulation_peak_params['G_precentral-lh']['MI/left'][1] = 0.4
     simulation_peak_params['G_precentral-rh']['MI/right'][1] = 0.4
