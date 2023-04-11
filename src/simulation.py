@@ -378,24 +378,29 @@ def generate_where(subject):
     return where
 
 
-def theta_activity(N_samples, sfreq, increase=1):
+def theta_activity(N_samples, sfreq, increase_dynamic='linear',
+                   scale=1):
     """
     Generate theta band activity.
-
     Parameters
     ----------
     N_samples : int
         Number of samples to generate.
     sfreq : int
         Sampling frequency in Hertz.
-    increase : float, optional
-        Multiplier of theta activity. The default is 1.
-
+    increase_dynamic :  'linear' | 'constant', optional
+        The theta power increase dynamic.
+        If linear, theta power increase linearly from basal level to
+        their maximum levels, given by scale, by the end of the session.
+        If constant, a constant increment given by scale is simulated in the
+        theta power, with respect to their basal level.
+        The default is 'linear'.
+    scale : float, optional
+        Multiplier of theta activity. The default is 1 (no increase).
     Returns
     -------
     source_theta_activity : numpy array, (N_samples,)
         The source activity in theta band.
-
     """
     # All sources are  gaussian
     rng = np.random.default_rng()
@@ -405,31 +410,39 @@ def theta_activity(N_samples, sfreq, increase=1):
                         'bandpass', fs=sfreq, output='sos')
     source_theta_activity = signal.sosfilt(sos, non_filtered_activity)
     # Increase theta activity in the fatigue condition
-    if increase != 1:
-        mask = np.linspace(0, increase, len(source_theta_activity))
-        source_theta_activity *= mask
+    if scale != 1:
+        if increase_dynamic == 'linear':
+            mask = np.linspace(0, scale, len(source_theta_activity))
+            source_theta_activity *= mask
+        elif increase_dynamic == 'constant':
+            source_theta_activity *= scale
     source_theta_activity = 1e-8*source_theta_activity
     return source_theta_activity
 
 
-def alpha_activity(N_samples, sfreq, increase=1):
+def alpha_activity(N_samples, sfreq, increase_dynamic='linear',
+                   scale=1):
     """
     Generate alpha band activity.
-
     Parameters
     ----------
     N_samples : int
         Number of samples to generate.
     sfreq : int
         Sampling frequency in Hertz.
-    increase : float, optional
-        Multiplier of theta activity. The default is 1.
-
+    increase_dynamic :  'linear' | 'constant', optional
+        The alpha power increase dynamic.
+        If linear, alpha power increase linearly from basal level to
+        their maximum levels, given by scale, by the end of the session.
+        If constant, a constant increment given by scale is simulated in the
+        alpha power, respectively, with respect to their basal level.
+        The default is 'linear'.
+    scale : float, optional
+        Multiplier of alpha activity. The default is 1 (no increase).
     Returns
     -------
     source_alpha_activity : numpy array, (N_samples,)
         The source activity in alpha band.
-
     """
     # All sources are gaussian
     rng = np.random.default_rng()
@@ -439,9 +452,12 @@ def alpha_activity(N_samples, sfreq, increase=1):
                         'bandpass', fs=sfreq, output='sos')
     source_alpha_activity = signal.sosfilt(sos, non_filtered_activity)
     # Increase alpha activity in the fatigue condition
-    if increase != 1:
-        mask = np.linspace(0, increase, len(source_alpha_activity))
-        source_alpha_activity *= mask
+    if scale != 1:
+        if increase_dynamic == 'linear':
+            mask = np.linspace(0, scale, len(source_alpha_activity))
+            source_alpha_activity *= mask
+        elif increase_dynamic == 'constant':
+            source_alpha_activity *= scale
     return 1e-8*source_alpha_activity
 
 
@@ -450,19 +466,18 @@ def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
     Add basal theta band activity to source_simulator object.
     Mental fatigue is associated with increased power in frontal theta (θ) and
     parietal alpha (α) EEG rhythms. Returns modified SourceSimulator object.
-
     Parameters
     ----------
     source_simulator : Instance of MNE SourceSimulator object
         The mne.simulation.SourceSimulator object to modify.
     fatigue_start : int
         Time fatigue starts in % of the total length of the session.
-
+    subject : str
+        The FreeSurfer subject name.
     Returns
     -------
     source_simulator : Instance of MNE SourceSimulator object.
         The mne.simulation.SourceSimulator instance modified in-place.
-
     """
     annot = 'aparc.a2009s'
     event = np.array([0, 0, 4])[np.newaxis]
@@ -510,7 +525,8 @@ def add_basal_theta_alpha(source_simulator, fatigue_start, subject):
 
 
 def add_fatigue_effect(source_simulator, fatigue_start, subject,
-                       annot='aparc.a2009s'):
+                       increase_dynamic='linear',
+                       alpha_scale=30*1.5, theta_scale=40*1.3):
     """
     Add fatigue effects to source_simulator object.
     Mental fatigue is associated with increased power in frontal theta (θ) and
@@ -521,7 +537,24 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
     source_simulator : Instance of MNE SourceSimulator object
         The mne.simulation.SourceSimulator object to modify.
     fatigue_start : int
-        Time fatigue starts in % of the total length of the session.
+        Fatigue onset as a proportion of the total length of the session.
+    subject : str
+        The FreeSurfer subject name.
+    increase_dynamic :  'linear' | 'constant', optional
+        The alpha and theta power increase dynamic.
+        If linear, alpha and theta power increase linearly from basal level to
+        their maximum levels, given by alpha_scale and theta_scale, by the end
+        of the session.
+        If constant, a constant increment given by alpha_scale and theta_scale
+        is simulated in the alpha and theta power, respectively, with respect
+        to their basal level.
+        The default is 'linear'.
+    alpha_scale : float, optional
+        The proportion by which power in the alpha band increases, as a
+        proportion of the basal alpha power. The default is 30*1.5.
+    theta_scale : float, optional
+        The proportion by which power in the theta band increases, as a
+        proportion of the basal theta power. The default is 40*1.3.
 
     Returns
     -------
@@ -530,6 +563,7 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
 
     """
 
+    annot = 'aparc.a2009s'
     N_samples_alert = int(fatigue_start*source_simulator.n_times)
     event = np.array([N_samples_alert, 0, 5])[np.newaxis]
     # Add alpha activiy in fatigue condition
@@ -537,7 +571,8 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
 
     what = alpha_activity(N_samples_fatigue,
                           sfreq=int(1/source_simulator._tstep),
-                          increase=30*1.5)
+                          increase_dynamic=increase_dynamic,
+                          scale=alpha_scale)
     label_tmp = read_labels_from_annot(subject, annot, hemi='rh',
                                        regexp='G_and_S_paracentral',
                                        verbose=False)
@@ -557,7 +592,8 @@ def add_fatigue_effect(source_simulator, fatigue_start, subject,
     # Add theta activiy in fatigue condition
     what = theta_activity(N_samples_fatigue,
                           sfreq=int(1/source_simulator._tstep),
-                          increase=40*1.3)
+                          increase_dynamic=increase_dynamic,
+                          scale=theta_scale)
     label_tmp = read_labels_from_annot(subject, annot,
                                        regexp='G_front_sup',
                                        hemi='lh', verbose=False)
