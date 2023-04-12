@@ -346,7 +346,7 @@ def plot_PSD_FOOOF(epochs_right, epochs_left, f_min=1, f_max=40, t_min=0,
     axs[2].set_ylabel(None)
     axs[2].grid(False)
 
-    axs[3].set_title('Right hand MI - C4', fontsize=18)
+    axs[3].set_title('Left hand MI - C4', fontsize=18)
     plot_FOOOF(freqs, np.mean(PSD_left[:, ch_names.index('C4')], axis=0),
                ax=axs[3])
     axs[3].set_yticklabels([])
